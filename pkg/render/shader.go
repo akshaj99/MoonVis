@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/mathgl/mgl32"
 )
 
 type Shader struct {
@@ -20,7 +19,7 @@ var vertexShaderSource string
 var fragmentShaderSource string
 
 func NewShader() (*Shader, error) {
-	//Add null terminator to shader sources
+	//Added null terminator to shader sources
 	vertexSource := vertexShaderSource + "\x00"
 	fragmentSource := fragmentShaderSource + "\x00"
 
@@ -77,29 +76,4 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 
 func (s *Shader) Use() {
 	gl.UseProgram(s.Program)
-}
-
-// Added helper methods for setting uniforms
-func (s *Shader) SetBool(name string, value bool) {
-	var intValue int32
-	if value {
-		intValue = 1
-	}
-	gl.Uniform1i(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), intValue)
-}
-
-func (s *Shader) SetInt(name string, value int32) {
-	gl.Uniform1i(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), value)
-}
-
-func (s *Shader) SetFloat(name string, value float32) {
-	gl.Uniform1f(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), value)
-}
-
-func (s *Shader) SetVec3(name string, value mgl32.Vec3) {
-	gl.Uniform3fv(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), 1, &value[0])
-}
-
-func (s *Shader) SetMat4(name string, value mgl32.Mat4) {
-	gl.UniformMatrix4fv(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), 1, false, &value[0])
 }
