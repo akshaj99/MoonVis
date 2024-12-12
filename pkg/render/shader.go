@@ -1,53 +1,35 @@
 package render
 
 import (
+	_ "embed"
 	"fmt"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 type Shader struct {
 	Program uint32
 }
 
-var vertexShaderSource = `
-#version 410
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec3 normal;
-layout (location = 2) in vec2 texCoord;
+//go:embed shaders/vertex.glsl
+var vertexShaderSource string
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-
-out vec2 TexCoords;
-
-void main() {
-    TexCoords = texCoord;
-    gl_Position = projection * view * model * vec4(position, 1.0);
-}
-` + "\x00"
-
-var fragmentShaderSource = `
-#version 410
-in vec2 TexCoords;
-out vec4 FragColor;
-
-uniform sampler2D moonTexture;
-
-void main() {
-    FragColor = texture(moonTexture, TexCoords);
-}
-` + "\x00"
+//go:embed shaders/fragment.glsl
+var fragmentShaderSource string
 
 func NewShader() (*Shader, error) {
-	vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+	//Add null terminator to shader sources
+	vertexSource := vertexShaderSource + "\x00"
+	fragmentSource := fragmentShaderSource + "\x00"
+
+	vertexShader, err := compileShader(vertexSource, gl.VERTEX_SHADER)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile vertex shader: %v", err)
 	}
 
-	fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+	fragmentShader, err := compileShader(fragmentSource, gl.FRAGMENT_SHADER)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile fragment shader: %v", err)
 	}
@@ -95,4 +77,29 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 
 func (s *Shader) Use() {
 	gl.UseProgram(s.Program)
+}
+
+// Added helper methods for setting uniforms
+func (s *Shader) SetBool(name string, value bool) {
+	var intValue int32
+	if value {
+		intValue = 1
+	}
+	gl.Uniform1i(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), intValue)
+}
+
+func (s *Shader) SetInt(name string, value int32) {
+	gl.Uniform1i(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), value)
+}
+
+func (s *Shader) SetFloat(name string, value float32) {
+	gl.Uniform1f(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), value)
+}
+
+func (s *Shader) SetVec3(name string, value mgl32.Vec3) {
+	gl.Uniform3fv(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), 1, &value[0])
+}
+
+func (s *Shader) SetMat4(name string, value mgl32.Mat4) {
+	gl.UniformMatrix4fv(gl.GetUniformLocation(s.Program, gl.Str(name+"\x00")), 1, false, &value[0])
 }
